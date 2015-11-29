@@ -1,0 +1,15 @@
+{
+    "name": "shanethehat/PhpHacon",
+    "require-dev": {
+        "phpspec/phpspec": "~2.4",
+        "behat/behat": "~3.0"
+    },
+    "config": {
+        "bin-dir": "bin"
+    },
+    "autoload": {
+        "psr-0": {
+            "": "src"
+        }
+    }
+}
