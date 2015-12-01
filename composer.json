@@ -1,5 +1,5 @@
 {
-    "name": "shanethehat/PhpHacon",
+    "name": "shanethehat/php-hocon",
     "require-dev": {
         "phpspec/phpspec": "~2.4",
         "behat/behat": "~3.0"
