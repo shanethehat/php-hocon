@@ -9,7 +9,10 @@
     },
     "autoload": {
         "psr-0": {
-            "": "src"
+            "": [
+              "src",
+              "features/bootstrap"
+            ]
         }
     }
 }
