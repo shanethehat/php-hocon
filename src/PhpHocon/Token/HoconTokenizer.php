@@ -2,6 +2,9 @@
 
 namespace PhpHocon\Token;
 
+use PhpHocon\Token\Value\BooleanValue;
+use PhpHocon\Token\Value\NullValue;
+use PhpHocon\Token\Value\NumberValue;
 use PhpHocon\Token\Value\StringValue;
 
 class HoconTokenizer implements Tokenizer
@@ -96,6 +99,21 @@ class HoconTokenizer implements Tokenizer
                 $this->currentKey,
                 new StringValue(substr($this->currentValue, 1, -1))
             );
+        } else if (is_numeric($this->currentValue)) {
+            $this->tokens[] = new Field(
+                $this->currentKey,
+                new NumberValue($this->convertStringToNumber($this->currentValue))
+            );
+        } elseif ($this->currentValueIsBoolean()) {
+            $this->tokens[] = new Field(
+                $this->currentKey,
+                new BooleanValue($this->currentValue === 'true')
+            );
+        } elseif ($this->currentValueIsNull()) {
+            $this->tokens[] = new Field(
+                $this->currentKey,
+                new NullValue()
+            );
         }
     }
 
@@ -107,5 +125,20 @@ class HoconTokenizer implements Tokenizer
     private function startsAndEndsWith($string)
     {
         return $this->currentValue[0] === $string && $this->currentValue[strlen($this->currentValue) - 1] === $string;
+    }
+
+    private function convertStringToNumber($value)
+    {
+        return strpos($value, '.') === false ? (int)$value : (float)$value;
+    }
+
+    private function currentValueIsBoolean()
+    {
+        return $this->currentValue === 'true' || $this->currentValue === 'false';
+    }
+
+    private function currentValueIsNull()
+    {
+        return $this->currentValue === 'null';
     }
 }

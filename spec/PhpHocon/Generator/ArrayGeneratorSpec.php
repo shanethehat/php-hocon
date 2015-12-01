@@ -4,6 +4,9 @@ namespace spec\PhpHocon\Generator;
 
 use PhpHocon\Token\Field;
 use PhpHocon\Token\Key;
+use PhpHocon\Token\Value\BooleanValue;
+use PhpHocon\Token\Value\NullValue;
+use PhpHocon\Token\Value\NumberValue;
 use PhpHocon\Token\Value\StringValue;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
@@ -20,9 +23,27 @@ class ArrayGeneratorSpec extends ObjectBehavior
         $this->generate([])->shouldReturn([]);
     }
 
-    function it_returns_a_single_simple_field()
+    function it_returns_a_single_simple_string_field()
     {
         $field = new Field(new Key('key'), new StringValue('value'));
         $this->generate([$field])->shouldReturn(['key' => 'value']);
+    }
+
+    function it_returns_a_single_simple_number_field()
+    {
+        $field = new Field(new Key('key'), new NumberValue(3));
+        $this->generate([$field])->shouldReturn(['key' => 3]);
+    }
+
+    function it_returns_a_single_simple_boolean_field()
+    {
+        $field = new Field(new Key('key'), new BooleanValue(true));
+        $this->generate([$field])->shouldReturn(['key' => true]);
+    }
+
+    function it_returns_a_single_simple_null_field()
+    {
+        $field = new Field(new Key('key'), new NullValue());
+        $this->generate([$field])->shouldReturn(['key' => null]);
     }
 }

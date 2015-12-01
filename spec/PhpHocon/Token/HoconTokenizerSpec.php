@@ -3,7 +3,6 @@
 namespace spec\PhpHocon\Token;
 
 use PhpHocon\Token\Field;
-use PhpHocon\Token\Value\StringValue;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
 
@@ -14,22 +13,47 @@ class HoconTokenizerSpec extends ObjectBehavior
         $this->shouldImplement('PhpHocon\Token\Tokenizer');
     }
 
-//    function it_should_return_a_token_collection_object()
-//    {
-//        $this->tokenize('')->shouldBeAnInstanceOf('PhpHocon\Token\Collection');
-//    }
-//
-//    function it_should_return_an_empty_collection_for_an_empty_string()
-//    {
-//        $collection = $this->tokenize('');
-//        $collection->isEmpty()->shouldReturn(true);
-//    }
 
-    function it_should_return_tokens_for_a_simple_key_value_pair()
+    function it_should_return_tokens_for_a_simple_key_and_string_value_pair()
     {
         $collection = $this->tokenize('key = "value"');
         $collection->shouldContainAFieldWithKey('key');
-        $collection->shouldContainAStringValue('key', 'value');
+        $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\StringValue', 'value');
+    }
+
+    function it_should_return_tokens_for_a_simple_key_and_integer_value_pair()
+    {
+        $collection = $this->tokenize('key = 3');
+        $collection->shouldContainAFieldWithKey('key');
+        $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\NumberValue', 3);
+    }
+
+    function it_should_return_tokens_for_a_simple_key_and_float_value_pair()
+    {
+        $collection = $this->tokenize('key = 3.5');
+        $collection->shouldContainAFieldWithKey('key');
+        $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\NumberValue', 3.5);
+    }
+
+    function it_should_return_tokens_for_a_simple_key_and_true_boolean_value_pair()
+    {
+        $collection = $this->tokenize('key = true');
+        $collection->shouldContainAFieldWithKey('key');
+        $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\BooleanValue', true);
+    }
+
+    function it_should_return_tokens_for_a_simple_key_and_false_boolean_value_pair()
+    {
+        $collection = $this->tokenize('key = false');
+        $collection->shouldContainAFieldWithKey('key');
+        $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\BooleanValue', false);
+    }
+
+    function it_should_return_tokens_for_a_simple_key_and_null_value_pair()
+    {
+        $collection = $this->tokenize('key = null');
+        $collection->shouldContainAFieldWithKey('key');
+        $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\NullValue', null);
     }
 
     function getMatchers()
@@ -43,11 +67,11 @@ class HoconTokenizerSpec extends ObjectBehavior
                 }
                 return false;
             },
-            'containAStringValue' => function ($subject, $key, $value) {
+            'containATypedValue' => function ($subject, $key, $type, $value) {
                 foreach ($subject as $token) {
                     if ($token instanceof Field &&
                         $token->getKey()->getName() === $key &&
-                        $token->getValue() instanceof StringValue &&
+                        $token->getValue() instanceof $type &&
                         $token->getValue()->getContent() === $value
                     ) {
                         return true;

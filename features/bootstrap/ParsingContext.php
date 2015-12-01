@@ -39,7 +39,33 @@ class ParsingContext implements SnippetAcceptingContext
     public function theResultKeyShouldHaveTheStringValue($key, $value)
     {
         $resultValue = $this->parserResult[$key];
-        assert(is_string($value));
         assert($resultValue === $value);
+    }
+
+    /**
+     * @Then the result key :key should have the number value :value
+     */
+    public function theResultKeyShouldHaveTheNumberValue($key, $value)
+    {
+        $resultValue = $this->parserResult[$key];
+        assert($resultValue === (int)$value);
+    }
+
+    /**
+     * @Then the result key :key should have the boolean value :value
+     */
+    public function theResultKeyShouldHaveTheBooleanValue($key, $value)
+    {
+        $resultValue = $this->parserResult[$key];
+        assert($resultValue === ($value === 'true'));
+    }
+
+    /**
+     * @Then the result key :key should have a null value
+     */
+    public function theResultKeyShouldHaveANullValue($key)
+    {
+        $resultValue = $this->parserResult[$key];
+        assert($resultValue === null);
     }
 }
