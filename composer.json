@@ -1,5 +1,16 @@
 {
     "name": "shanethehat/php-hocon",
+    "description": "Library for parsing HOCON format configuration files",
+    "type": "library",
+    "license": "Apache2",
+    "keywords": ["hocon", "typesafe", "config", "parser"],
+    "authors": [
+      {
+        "name": "Shane Auckland",
+        "email": "shane.auckland@gmail.com",
+        "homepage": "http://shaneauckland.co.uk"
+      }
+    ],
     "require-dev": {
         "phpspec/phpspec": "~2.4",
         "behat/behat": "~3.0"
