@@ -6,7 +6,7 @@ interface Tokenizer
 {
     /**
      * @param string $input
-     * @return Collection
+     * @return array
      */
     public function tokenize($input);
 }

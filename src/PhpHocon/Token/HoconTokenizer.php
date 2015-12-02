@@ -52,7 +52,7 @@ class HoconTokenizer implements Tokenizer
 
     /**
      * @param string $input
-     * @return Collection
+     * @return array
      */
     public function tokenize($input)
     {
@@ -94,7 +94,6 @@ class HoconTokenizer implements Tokenizer
         $this->checkParserState();
 
         return $this->tokens;
-        //return new Collection($this->tokens);
     }
 
     private function startParsing()
