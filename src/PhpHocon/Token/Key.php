@@ -1,13 +1,6 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: shane
- * Date: 30/11/15
- * Time: 12:52
- */
 
 namespace PhpHocon\Token;
-
 
 class Key
 {
