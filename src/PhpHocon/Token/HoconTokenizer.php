@@ -81,11 +81,8 @@ class HoconTokenizer implements Tokenizer
                     $this->stopCurrentAction();
                     break;
                 case Tokens::NEW_LINE:
-                    if ($this->stringStarted) {
-                        $this->currentValue .= $chars[$i];
-                    } else {
-                        $this->stopCurrentAction();
-                    }
+                    $this->handleNewline($chars[$i]);
+                    break;
                 default:
                     $this->foundStart = true;
                     $this->currentValue .= $chars[$i];
@@ -126,6 +123,7 @@ class HoconTokenizer implements Tokenizer
 
         $this->saveCurrentAsValue();
         $this->currentValue = '';
+        $this->leftSide = true;
     }
 
     private function saveCurrentAsValue()
@@ -218,6 +216,18 @@ class HoconTokenizer implements Tokenizer
     {
         if ($this->braceCount !== 0) {
             throw new ParseException('Brace count is not equal');
+        }
+    }
+
+    /**
+     * @param string $character
+     */
+    private function handleNewline($character)
+    {
+        if ($this->stringStarted) {
+            $this->currentValue .= $character;
+        } else {
+            $this->stopCurrentAction();
         }
     }
 }

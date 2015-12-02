@@ -77,6 +77,15 @@ class HoconTokenizerSpec extends ObjectBehavior
         $this->shouldThrow(new ParseException('Brace count is not equal'))->during('tokenize', [$input]);
     }
 
+    function it_should_parse_multiple_simple_key_value_pairs()
+    {
+        $collection = $this->tokenize($this->getTwoSimpleValues());
+        $collection->shouldContainAFieldWithKey('key1');
+        $collection->shouldContainATypedValue('key1', 'PhpHocon\Token\Value\StringValue', 'value1');
+        $collection->shouldContainAFieldWithKey('key2');
+        $collection->shouldContainATypedValue('key2', 'PhpHocon\Token\Value\StringValue', 'value2');
+    }
+
     function getMatchers()
     {
         return [
@@ -112,6 +121,14 @@ class HoconTokenizerSpec extends ObjectBehavior
 {
     key = "value"
 }
+EOT;
+    }
+
+    private function getTwoSimpleValues()
+    {
+        return <<<EOT
+key1 = "value1"
+key2 = "value2"
 EOT;
     }
 }
