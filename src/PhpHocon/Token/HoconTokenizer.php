@@ -2,6 +2,7 @@
 
 namespace PhpHocon\Token;
 
+use PhpHocon\Exception\ParseException;
 use PhpHocon\Token\Value\BooleanValue;
 use PhpHocon\Token\Value\NullValue;
 use PhpHocon\Token\Value\NumberValue;
@@ -35,6 +36,21 @@ class HoconTokenizer implements Tokenizer
     private $foundStart;
 
     /**
+     * @var bool
+     */
+    private $stringStarted;
+
+    /**
+     * @var string
+     */
+    private $currentStringDeliminator;
+
+    /**
+     * @var int
+     */
+    private $braceCount;
+
+    /**
      * @param string $input
      * @return Collection
      */
@@ -46,14 +62,30 @@ class HoconTokenizer implements Tokenizer
 
         for ($i = 0, $max = count($chars); $i < $max; $i++) {
             switch ($chars[$i]) {
+                case Tokens::LEFT_BRACE:
+                    $this->handleOpeningBrace();
+                    break;
+                case Tokens::RIGHT_BRACE:
+                    $this->handleClosingBrace();
+                    break;
+                case Tokens::SPEECH_MARK:
+                case Tokens::APOSTROPHE:
+                    $this->handleStringDeliminator($chars[$i]);
+                    break;
                 case Tokens::SPACE:
-                    $this->stopCurrentAction();
+                    $this->handleSpace($chars[$i]);
                     break;
                 case Tokens::EQUALS:
                 case Tokens::COLON:
                     $this->leftSide = false;
                     $this->stopCurrentAction();
                     break;
+                case Tokens::NEW_LINE:
+                    if ($this->stringStarted) {
+                        $this->currentValue .= $chars[$i];
+                    } else {
+                        $this->stopCurrentAction();
+                    }
                 default:
                     $this->foundStart = true;
                     $this->currentValue .= $chars[$i];
@@ -61,6 +93,8 @@ class HoconTokenizer implements Tokenizer
         }
 
         $this->stopCurrentAction();
+
+        $this->checkParserState();
 
         return $this->tokens;
         //return new Collection($this->tokens);
@@ -72,6 +106,8 @@ class HoconTokenizer implements Tokenizer
         $this->tokens = [];
         $this->leftSide = true;
         $this->foundStart = false;
+        $this->stringStarted = false;
+        $this->braceCount = 0;
     }
 
     private function stopCurrentAction()
@@ -94,12 +130,7 @@ class HoconTokenizer implements Tokenizer
 
     private function saveCurrentAsValue()
     {
-        if ($this->currentValueIsString()) {
-            $this->tokens[] = new Field(
-                $this->currentKey,
-                new StringValue(substr($this->currentValue, 1, -1))
-            );
-        } else if (is_numeric($this->currentValue)) {
+        if (is_numeric($this->currentValue)) {
             $this->tokens[] = new Field(
                 $this->currentKey,
                 new NumberValue($this->convertStringToNumber($this->currentValue))
@@ -114,17 +145,12 @@ class HoconTokenizer implements Tokenizer
                 $this->currentKey,
                 new NullValue()
             );
+        } else {
+            $this->tokens[] = new Field(
+                $this->currentKey,
+                new StringValue($this->currentValue)
+            );
         }
-    }
-
-    private function currentValueIsString()
-    {
-        return $this->startsAndEndsWith('"') || $this->startsAndEndsWith('\'');
-    }
-
-    private function startsAndEndsWith($string)
-    {
-        return $this->currentValue[0] === $string && $this->currentValue[strlen($this->currentValue) - 1] === $string;
     }
 
     private function convertStringToNumber($value)
@@ -140,5 +166,58 @@ class HoconTokenizer implements Tokenizer
     private function currentValueIsNull()
     {
         return $this->currentValue === 'null';
+    }
+
+    private function handleStringDeliminator($deliminator)
+    {
+        if (!$this->stringStarted) {
+            $this->stringStarted = true;
+            $this->currentStringDeliminator = $deliminator;
+            return;
+        }
+
+        if ($this->currentStringDeliminator === $deliminator) {
+            $this->stringStarted = false;
+            return;
+        }
+
+        $this->currentValue .= $deliminator;
+    }
+
+    /**
+     * @param string $character
+     */
+    private function handleSpace($character)
+    {
+        if ($this->stringStarted) {
+            $this->currentValue .= $character;
+        } else {
+            $this->stopCurrentAction();
+        }
+    }
+
+    private function handleOpeningBrace()
+    {
+        if ($this->stringStarted) {
+            $this->currentValue .= Tokens::LEFT_BRACE;
+        } else {
+            $this->braceCount++;
+        }
+    }
+
+    private function handleClosingBrace()
+    {
+        if ($this->stringStarted) {
+            $this->currentValue .= Tokens::RIGHT_BRACE;
+        } else {
+            $this->braceCount--;
+        }
+    }
+
+    private function checkParserState()
+    {
+        if ($this->braceCount !== 0) {
+            throw new ParseException('Brace count is not equal');
+        }
     }
 }

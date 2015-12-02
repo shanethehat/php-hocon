@@ -2,6 +2,7 @@
 
 namespace spec\PhpHocon\Token;
 
+use PhpHocon\Exception\ParseException;
 use PhpHocon\Token\Field;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
@@ -56,6 +57,26 @@ class HoconTokenizerSpec extends ObjectBehavior
         $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\NullValue', null);
     }
 
+    function it_should_handle_strings_containing_spaces()
+    {
+        $collection = $this->tokenize('key = "my value"');
+        $collection->shouldContainAFieldWithKey('key');
+        $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\StringValue', 'my value');
+    }
+
+    function it_should_ignore_outermost_braces()
+    {
+        $collection = $this->tokenize($this->getSingleValueWithOuterBraces());
+        $collection->shouldContainAFieldWithKey('key');
+        $collection->shouldContainATypedValue('key', 'PhpHocon\Token\Value\StringValue', 'value');
+    }
+
+    function it_should_throw_an_exception_if_braces_are_not_balanced()
+    {
+        $input = substr($this->getSingleValueWithOuterBraces(), 0, -1);
+        $this->shouldThrow(new ParseException('Brace count is not equal'))->during('tokenize', [$input]);
+    }
+
     function getMatchers()
     {
         return [
@@ -80,5 +101,17 @@ class HoconTokenizerSpec extends ObjectBehavior
                 return false;
             },
         ];
+    }
+
+    /**
+     * @return string
+     */
+    private function getSingleValueWithOuterBraces()
+    {
+        return <<<EOT
+{
+    key = "value"
+}
+EOT;
     }
 }
