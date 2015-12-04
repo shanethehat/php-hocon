@@ -3,52 +3,34 @@
 namespace PhpHocon\Token;
 
 use PhpHocon\Exception\ParseException;
-use PhpHocon\Token\Value\BooleanValue;
-use PhpHocon\Token\Value\NullValue;
-use PhpHocon\Token\Value\NumberValue;
-use PhpHocon\Token\Value\StringValue;
+use PhpHocon\Token\Parser\AssignmentParser;
+use PhpHocon\Token\Parser\KeyParser;
+use PhpHocon\Token\Parser\Parser;
+use PhpHocon\Token\Parser\ParserState;
+use PhpHocon\Token\Parser\ValueParser;
+use PhpHocon\Token\Parser\WhitespaceParser;
 
 class HoconTokenizer implements Tokenizer
 {
-    /**
-     * @var Key
-     */
-    private $currentKey;
-
-    /**
-     * @var string
-     */
-    private $currentValue;
-
     /**
      * @var array
      */
     private $tokens;
 
     /**
-     * @var bool
+     * @var Parser[]
      */
-    private $leftSide;
+    private $parserChain;
 
-    /**
-     * @var bool
-     */
-    private $foundStart;
-
-    /**
-     * @var bool
-     */
-    private $stringStarted;
-
-    /**
-     * @var string
-     */
-    private $currentStringDeliminator;
-
-    /**
-     * @var int
-     */
-    private $braceCount;
+    public function __construct()
+    {
+        $this->parserChain = [
+            new KeyParser(),
+            new ValueParser(),
+            new AssignmentParser(),
+            new WhitespaceParser()
+        ];
+    }
 
     /**
      * @param string $input
@@ -56,177 +38,64 @@ class HoconTokenizer implements Tokenizer
      */
     public function tokenize($input)
     {
-        $chars = str_split($input);
+        $this->tokens = [];
+        $chars = $this->createCharacterList($input);
 
-        $this->startParsing();
+        $initialState = new ParserState($chars, 0, false, true);
+        $endState = $this->parseState($initialState);
 
-        for ($i = 0, $max = count($chars); $i < $max; $i++) {
-            switch ($chars[$i]) {
-                case Tokens::LEFT_BRACE:
-                    $this->handleOpeningBrace();
-                    break;
-                case Tokens::RIGHT_BRACE:
-                    $this->handleClosingBrace();
-                    break;
-                case Tokens::SPEECH_MARK:
-                case Tokens::APOSTROPHE:
-                    $this->handleStringDeliminator($chars[$i]);
-                    break;
-                case Tokens::SPACE:
-                    $this->handleSpace($chars[$i]);
-                    break;
-                case Tokens::EQUALS:
-                case Tokens::COLON:
-                    $this->leftSide = false;
-                    $this->stopCurrentAction();
-                    break;
-                case Tokens::NEW_LINE:
-                    $this->handleNewline($chars[$i]);
-                    break;
-                default:
-                    $this->foundStart = true;
-                    $this->currentValue .= $chars[$i];
-            }
-        }
-
-        $this->stopCurrentAction();
-
-        $this->checkParserState();
+        $this->checkParserState($endState);
 
         return $this->tokens;
     }
 
-    private function startParsing()
+    /**
+     * @param ParserState $state
+     */
+    private function checkParserState(ParserState $state)
     {
-        $this->currentValue = '';
-        $this->tokens = [];
-        $this->leftSide = true;
-        $this->foundStart = false;
-        $this->stringStarted = false;
-        $this->braceCount = 0;
-    }
-
-    private function stopCurrentAction()
-    {
-        if (!$this->foundStart) {
-            return;
-        }
-
-        $this->foundStart = false;
-
-        if ($this->leftSide) {
-            $this->currentKey = new Key($this->currentValue);
-            $this->currentValue = '';
-            return;
-        }
-
-        $this->saveCurrentAsValue();
-        $this->currentValue = '';
-        $this->leftSide = true;
-    }
-
-    private function saveCurrentAsValue()
-    {
-        if (is_numeric($this->currentValue)) {
-            $this->tokens[] = new Field(
-                $this->currentKey,
-                new NumberValue($this->convertStringToNumber($this->currentValue))
-            );
-        } elseif ($this->currentValueIsBoolean()) {
-            $this->tokens[] = new Field(
-                $this->currentKey,
-                new BooleanValue($this->currentValue === 'true')
-            );
-        } elseif ($this->currentValueIsNull()) {
-            $this->tokens[] = new Field(
-                $this->currentKey,
-                new NullValue()
-            );
-        } else {
-            $this->tokens[] = new Field(
-                $this->currentKey,
-                new StringValue($this->currentValue)
+        if (count($state->getCharacters())) {
+            throw new ParseException(
+                'Config file was not parsed completely. Remaining: ' . implode($state->getCharacters())
             );
         }
-    }
-
-    private function convertStringToNumber($value)
-    {
-        return strpos($value, '.') === false ? (int)$value : (float)$value;
-    }
-
-    private function currentValueIsBoolean()
-    {
-        return $this->currentValue === 'true' || $this->currentValue === 'false';
-    }
-
-    private function currentValueIsNull()
-    {
-        return $this->currentValue === 'null';
-    }
-
-    private function handleStringDeliminator($deliminator)
-    {
-        if (!$this->stringStarted) {
-            $this->stringStarted = true;
-            $this->currentStringDeliminator = $deliminator;
-            return;
-        }
-
-        if ($this->currentStringDeliminator === $deliminator) {
-            $this->stringStarted = false;
-            return;
-        }
-
-        $this->currentValue .= $deliminator;
     }
 
     /**
-     * @param string $character
+     * @param $input
+     * @return array
      */
-    private function handleSpace($character)
+    private function createCharacterList($input)
     {
-        if ($this->stringStarted) {
-            $this->currentValue .= $character;
-        } else {
-            $this->stopCurrentAction();
-        }
-    }
+        $chars = str_split($input);
 
-    private function handleOpeningBrace()
-    {
-        if ($this->stringStarted) {
-            $this->currentValue .= Tokens::LEFT_BRACE;
-        } else {
-            $this->braceCount++;
+        if ($chars[0] !== Tokens::LEFT_BRACE) {
+            return $chars;
         }
-    }
 
-    private function handleClosingBrace()
-    {
-        if ($this->stringStarted) {
-            $this->currentValue .= Tokens::RIGHT_BRACE;
-        } else {
-            $this->braceCount--;
-        }
-    }
-
-    private function checkParserState()
-    {
-        if ($this->braceCount !== 0) {
+        if ($chars[count($chars)-1] !== Tokens::RIGHT_BRACE) {
             throw new ParseException('Brace count is not equal');
         }
+
+        return array_slice($chars, 1, -1);
     }
 
-    /**
-     * @param string $character
-     */
-    private function handleNewline($character)
+    private function parseState(ParserState $state)
     {
-        if ($this->stringStarted) {
-            $this->currentValue .= $character;
-        } else {
-            $this->stopCurrentAction();
+        if (count($state->getCharacters()) === 0) {
+            return $state;
         }
+
+        foreach ($this->parserChain as $parser) {
+            if ($parser->canParse($state)) {
+                $result = $parser->parse($state);
+                if (null !== $element = $result->getElement()) {
+                    $this->tokens[] = $result->getElement();
+                }
+                return $this->parseState($result->getState());
+            }
+        }
+
+        return $state;
     }
 }

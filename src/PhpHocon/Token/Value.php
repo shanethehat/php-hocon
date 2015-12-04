@@ -2,7 +2,7 @@
 
 namespace PhpHocon\Token;
 
-interface Value
+interface Value extends Element
 {
     /**
      * @return mixed

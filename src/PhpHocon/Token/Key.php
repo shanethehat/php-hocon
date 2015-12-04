@@ -2,7 +2,7 @@
 
 namespace PhpHocon\Token;
 
-class Key
+class Key implements Element
 {
     /**
      * @var string
