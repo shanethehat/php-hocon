@@ -73,7 +73,7 @@ class HoconTokenizer implements Tokenizer
             return $chars;
         }
 
-        if ($chars[count($chars)-1] !== Tokens::RIGHT_BRACE) {
+        if ($chars[count($chars) - 1] !== Tokens::RIGHT_BRACE) {
             throw new ParseException('Brace count is not equal');
         }
 
