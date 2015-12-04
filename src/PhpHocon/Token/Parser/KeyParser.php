@@ -34,7 +34,7 @@ class KeyParser implements Parser
         $characters = $state->getCharacters();
         $keyName = '';
 
-        while($this->canParseKey($characters)) {
+        while ($this->canParseKey($characters)) {
             $keyName .= array_shift($characters);
         }
 

@@ -95,12 +95,8 @@ class ValueParser implements Parser
             return false;
         }
 
-        if ($this->isQuotedString && $characters[0] !== $this->quoteCharacter) {
-            return true;
-        }
-
-        if ($this->isQuotedString && $characters[0] === $this->quoteCharacter) {
-            return false;
+        if ($this->isQuotedString) {
+            return !$this->isStringTerminator($characters[0]);
         }
 
         return !in_array($characters[0], $this->illegalCharacters);
@@ -148,5 +144,14 @@ class ValueParser implements Parser
     private function valueIsNull($value)
     {
         return $value === 'null';
+    }
+
+    /**
+     * @param string $character
+     * @return bool
+     */
+    private function isStringTerminator($character)
+    {
+        return $character === $this->quoteCharacter;
     }
 }
