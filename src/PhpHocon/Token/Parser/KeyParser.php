@@ -4,6 +4,7 @@ namespace PhpHocon\Token\Parser;
 
 use PhpHocon\Token\Key;
 use PhpHocon\Token\Tokens;
+use Symfony\Component\Yaml\Exception\ParseException;
 
 class KeyParser implements Parser
 {
@@ -38,6 +39,8 @@ class KeyParser implements Parser
             $keyName .= array_shift($characters);
         }
 
+        $this->checkForBadlyFormedKey($keyName);
+
         return new ParseResult(
             new ParserState($characters, $state->getBraceCount(), false, true),
             new Key($keyName)
@@ -51,5 +54,12 @@ class KeyParser implements Parser
     private function canParseKey(array $characters)
     {
         return !empty($characters) && !in_array($characters[0], $this->breakCharacters);
+    }
+
+    private function checkForBadlyFormedKey($keyName)
+    {
+        if ($keyName[strlen($keyName) - 1] === '.') {
+            throw new ParseException('Malformed key: ' . $keyName);
+        }
     }
 }

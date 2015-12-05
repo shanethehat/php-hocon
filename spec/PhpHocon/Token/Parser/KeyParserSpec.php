@@ -5,6 +5,7 @@ namespace spec\PhpHocon\Token\Parser;
 use PhpHocon\Token\Parser\ParserState;
 use PhpSpec\ObjectBehavior;
 use Prophecy\Argument;
+use Symfony\Component\Yaml\Exception\ParseException;
 
 class KeyParserSpec extends ObjectBehavior
 {
@@ -69,5 +70,21 @@ class KeyParserSpec extends ObjectBehavior
         $element = $this->parse($state)->getElement();
         $element->shouldHaveType('PhpHocon\Token\Key');
         $element->getName()->shouldReturn('key');
+    }
+
+    function it_should_return_keys_containing_periods()
+    {
+        $state = new ParserState(['a', '.', 'b', '.', 'c'], 0, false, true);
+
+        $element = $this->parse($state)->getElement();
+        $element->shouldHaveType('PhpHocon\Token\Key');
+        $element->getName()->shouldReturn('a.b.c');
+    }
+
+    function it_should_reject_keys_ending_in_a_period()
+    {
+        $state = new ParserState(['a', '.', 'b', '.', ' '], 0, false, true);
+
+        $this->shouldThrow(new ParseException('Malformed key: a.b.'))->during('parse', [$state]);
     }
 }
